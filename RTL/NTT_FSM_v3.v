@@ -12,11 +12,11 @@ module NTT_FSM (
 
     output reg done_NTT,
     output [15:0] A0,
-    output reg [23:0] D0,
-    output reg WEB0,
+    output [23:0] D0,
+    output WEB0,
     output [15:0] A1,
-    output reg [23:0] D1,
-    output reg WEB1,
+    output [23:0] D1,
+    output WEB1,
     output [45:0] reduction_input0,
     output [45:0] reduction_input1,
     output [45:0] reduction_input2
@@ -24,48 +24,33 @@ module NTT_FSM (
 );
 
     localparam IDLE  = 3'b000;
-    localparam LOAD_V = 3'b001; //load 256 coefficients
-    localparam len_loop  = 3'b010;  //process NTT
-    localparam start_loop = 3'b011;
-    localparam j_loop = 3'b100;
-    localparam STORE_V = 3'b101; //store final NTT vector
-    localparam DONE = 3'b110;
+    localparam len_loop  = 3'b001;  //process NTT
+    localparam start_loop = 3'b010;
+    localparam j_read = 3'b011;
+    localparam j_write = 3'b100;
+    localparam DONE = 3'b101;
 
 
 
-    //this part is for simulation only
-    integer idx;
-    genvar gi;
 
     reg [2:0] current_state, next_state;
-    reg [15:0] address_counter;
-    reg done_load_v, done_store_v, j_loop_iter1_done, is_read_cycle, start_j_calc;    //0 is read, 1 is write
-    reg [22:0] w_array [0:255];  // 256 individual 23-bit regs
-    reg [10:0] w_ary_count, m, len, start, j, rst_ary_count ;
+    reg [10:0] m, len, start, j ;
     wire [23-1:0] zeta [0:255];
-    reg [22:0] z, t;
-    wire [45:0] reduction_mem_input0,reduction_mem_input1,reduction_mem_input2;
-
-    //Reduction part
-    // assign reduction_input0 = z*(w_array[j+len]);                
-    // assign reduction_input1 = w_array[j - 1] - t + 23'd8380417;  
-    // assign reduction_input2 = w_array[j - 1] + t;    
-
-    // assign A0 = is_read_cycle ? j + len + 1: j - 1 + len + 1;
-    // assign A1 = j;
-    // assign A0 = is_read_cycle ?  j - 1 + len + 1: j + len + 1; //added 1
-    // assign A1 = j - 1 + 1;                                      //added 1
+    reg [22:0] z;
+   
 
     assign A0 = j + len; //added 1
     assign A1 = j ;    
 
-    assign reduction_input0 = z*(w_array[j+len]);                
-    assign reduction_input1 = w_array[j - 1] - t + 23'd8380417;  
-    assign reduction_input2 = w_array[j - 1] + t;    
+    assign WEB0 = (current_state==j_read) ? 1'b1 : (current_state==j_write) ? 1'b0 : 1'b1;
+    assign WEB1 = (current_state==j_read) ? 1'b1 : (current_state==j_write) ? 1'b0 : 1'b1; 
 
-    assign reduction_mem_input0 = z*(Q0);                
-    assign reduction_mem_input1 = Q1 - t + 23'd8380417;  
-    assign reduction_mem_input2 = Q1 + t;    
+    assign D0 = reduction_output1;
+    assign D1 = reduction_output2;
+
+    assign reduction_input0 = z*(Q0);                
+    assign reduction_input1 = Q1 - reduction_output0 + 23'd8380417;  
+    assign reduction_input2 = Q1 + reduction_output0;    
 
 
     assign zeta[0] = 23'h000001;
@@ -338,12 +323,11 @@ module NTT_FSM (
     // ----------- Next State Logic (Combinational) -----------
     always @(*) begin
         case (current_state)
-            IDLE:  next_state = start_NTT ? LOAD_V : IDLE;
-            LOAD_V: next_state = done_load_v ? len_loop : LOAD_V;
-            len_loop: next_state = (len >= 9'b1) ? start_loop : STORE_V ;
-            start_loop: next_state = (start < 9'd256) ? j_loop : len_loop;
-            j_loop: next_state = (j != start + len - 1 + 1) ? j_loop : start_loop ;
-            STORE_V: next_state = done_store_v ? DONE : STORE_V;
+            IDLE:  next_state = start_NTT ? len_loop : IDLE;
+            len_loop: next_state = (len >= 9'b1) ? start_loop : DONE ;
+            start_loop: next_state = (start < 9'd256) ? j_read : len_loop;
+            j_read: next_state = j_write;
+            j_write: next_state = (j != start + len - 1) ? j_read : start_loop ;
             DONE:  next_state = IDLE;
             default: next_state = IDLE;
         endcase
@@ -352,82 +336,34 @@ module NTT_FSM (
 
     always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        address_counter <= 0;
-        // A <= 0;
-        // D <= 0;
-        // WEB <= 1;
-        done_load_v <= 0;
-        done_store_v <= 0;
-        w_ary_count <= 0;
         m <= 0;
         len <= 0;
         start <= 0;
         j <= 0;
-        rst_ary_count<=0;
         done_NTT <=0;
         z<=0;
-        t<=0;
-        j_loop_iter1_done<=0;
-        is_read_cycle<=1;
-        start_j_calc<=0;
-        WEB0<=1;
-        WEB1<=1;
-
         
 
     end else begin
         case (current_state)
             IDLE: begin
-                address_counter <= 0;
-                // A <= 0;
-                // D <= 0;
-                // WEB <= 1;
-                done_load_v <= 0;
-                done_store_v <= 0;
-                w_ary_count <= 0;
                 m <= 1;   //changed from 0 to 1
                 len <= 9'd128;
                 start <= 0;
                 j <= 0;
-                rst_ary_count <=0;
                 done_NTT <=0;
                 z<=0;
-                t<=0;
-                j_loop_iter1_done<=0;
-                start_j_calc<=0;
-                WEB0<=1;
-                WEB1<=1;
-                is_read_cycle<=1;
-            end
-
-            LOAD_V: begin
-                //set 256 entries of array 
-                w_array[(w_ary_count)] <= input_chunk;
-                
-                w_ary_count <= w_ary_count + 1;
-
-                if(w_ary_count == 254) begin
-                    done_load_v <= 1;
-                end
             end
 
             //i am here
             len_loop: begin
-                // A0 <= j + len;
-                // A1 <= j;
-                done_load_v <= 0;
                 if (len >= 1) begin
                     start <= 0;
                 end
-                
-                // WEB0<=1;
-                // WEB1<=1;
-                // is_read_cycle<=1;
+
             end
 
             start_loop: begin
-                // A0 <= j + len;
-                // A1 <= j;
                 if (start < 9'd256) begin
                     m <= m+1;
                     z <= zeta[m];
@@ -436,89 +372,37 @@ module NTT_FSM (
                 else begin
                     len <= {1'b0, len[10:1]};
                 end
-                j_loop_iter1_done<=0;
 
 
             end
 
-            j_loop: begin
-                if(is_read_cycle == 0 && j != start + len -1 + 1) begin
-                    // A0 <= j - 1 + len;
-                    // A1 <= j - 1;
+            j_read: begin
+ 
+            end
 
-                    is_read_cycle <= 1;
-                    WEB0 <= 1;
-                    WEB1 <= 1;
-                    start_j_calc<=1;
-                end
-                else if (is_read_cycle != 0 && j != start + len -1 + 1) begin
-                    // A0 <= j + len;
-                    // A1 <= j;
-
-                    is_read_cycle <=0;
-                    WEB0 <= 0;
-                    WEB1 <= 0;
-                end
-
-                if(j == start && j_loop_iter1_done == 0 && !is_read_cycle ) begin
-                    j_loop_iter1_done <=1;
+            j_write: begin
+                if ((j < start + len -1) ) begin
                     j <= j+1;
-                    t <= reduction_output0;
-                end
-                else if ((j < start + len -1 + 1) && !is_read_cycle ) begin
-                    j <= j+1;
-                    t <= reduction_output0;
-                    w_array[j - 1 + len] <= reduction_output1;
-                    w_array[j - 1] <= reduction_output2;
-                    D0 <= reduction_output1;
-                    D1 <= reduction_output2;
-                end
-                else if ((j == start + len -1 +1) && !is_read_cycle ) begin
-                    j <= j+1;
-                    w_array[j -1 + len] <= reduction_output1;
-                    w_array[j - 1] <= reduction_output2;
-                    D0 <= reduction_output1;
-                    D1 <= reduction_output2;
                 end
                 
-                if ((j == start + len -1 + 1) && !is_read_cycle ) begin
+                if ((j == start + len -1) ) begin
                     start <= start + {len[9:0], 1'b0};
-                    start_j_calc <= 0;
-                    // WEB0<=1;
-                    // WEB1<=1;
-                    // is_read_cycle<=1;
                 end
 
-            end
-
-
-            STORE_V: begin
-                // A <= address_counter;
-                // D <= w_array[address_counter];
-                // WEB <= 0;
-                // address_counter <= address_counter + 1;
-
-                // if (address_counter == 254) begin
-                //     done_store_v <= 1;
-                // end
             end
 
             DONE: begin
-                $display("Contents of c_array:");
-                for (idx = 0; idx < 256; idx = idx + 1) begin
-                    // $display("c_array[%0d] = %0d", idx, c_array[idx]);
-                    $display("%0d", w_array[idx]);
-                end
                 done_NTT <= 1;
-                // WEB <= 1;
 
             end
 
             default: begin
-                // A <= 0;
-                // D <= 0;
-                // WEB <= 1;
-                // address_counter <= 0;
+                m <= 1;   //changed from 0 to 1
+                len <= 9'd128;
+                start <= 0;
+                j <= 0;
+                done_NTT <=0;
+                z<=0;
             end
         endcase
     end
