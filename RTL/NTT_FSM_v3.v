@@ -5,7 +5,6 @@ module NTT_FSM (
     input [23:0] Q0,
     input [23:0] Q1,
 
-    input [23:0] input_chunk, //256 chunks of 24 bits (256*24)
     input [22:0] reduction_output0,
     input [22:0] reduction_output1,
     input [22:0] reduction_output2,
