@@ -7,8 +7,6 @@ module NTT_top (
     input [23:0] D_load,
     input        WEB_load,
 
-    input [23:0] input_chunk, //256 chunks of 24 bits (256*24)
-
     output done_NTT,
     output [23:0] Q0,
     output [23:0] Q1
@@ -36,7 +34,6 @@ module NTT_top (
         .rst_n           (rst_n),
         .start_NTT       (start_NTT),
 
-        .input_chunk     (input_chunk),
         .reduction_output0(red_out_0),
         .reduction_output1(red_out_1),
         .reduction_output2(red_out_2),
