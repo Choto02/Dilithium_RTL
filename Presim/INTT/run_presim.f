@@ -1,7 +1,7 @@
 //tb
 /home/sparclab/a/sayeeda/04_Dilithium_TSMC_0425/Presim/INTT/INTT_tb.v
 
-//NTT
+//INTT
 /home/sparclab/a/sayeeda/04_Dilithium_TSMC_0425/RTL/INTT_FSM.v
 /home/sparclab/a/sayeeda/04_Dilithium_TSMC_0425/RTL/INTT_top.v
 
