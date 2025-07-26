@@ -3,7 +3,6 @@
 
 //NTT
 /home/sparclab/a/sayeeda/04_Dilithium_TSMC_0425/RTL/INTT_FSM.v
-// /home/sparclab/a/sayeeda/04_Dilithium_TSMC_0425/RTL/NTT_FSM.v
 /home/sparclab/a/sayeeda/04_Dilithium_TSMC_0425/RTL/INTT_top.v
 
 //Reduction
