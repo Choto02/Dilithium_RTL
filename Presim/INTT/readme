@@ -1,0 +1,1 @@
+INTT module, uses 2 port sram, uses same zeta values as NTT, two clock cycles per computation (one for read, on for write). Last step involves multiplying all coeffecients by constant value.
