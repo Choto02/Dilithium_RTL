@@ -1,0 +1,4 @@
+SampleInBall pseudorandomly generates an element of 𝐵𝜏 using the XOF of a seed 𝜌. 
+The procedure is based on the Fisher-Yates shuffle. 
+H is applied to 𝜌, and the first 8 bytes of the output are used to choose the signs of the nonzero entries of 𝑐. 
+Subsequent bytes are used to choose the positions ofthose nonzero entries.
