@@ -1,0 +1,1 @@
+NTT module uses 2 port sram module. One cycle for reading w[j] and w[j+len] and following cycle for writing computed values to w[j] and w[j+len].
