@@ -1,0 +1,1 @@
+ExpandA uses RejectNTTPoly which uses G function (SHAKE128) which is a wrapper on Keccak.
